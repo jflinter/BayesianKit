@@ -102,11 +102,12 @@
 
 /** Create a new classifier using a previous training saved in a file.
  
+ If the file does not exist, returns a new classifier with that file.
  @param path The path to the file containing the classifier's save.
  @returns A new bayesian classifier.
  @see initWithContentsOfFile:
  */
-- (BKClassifier*)classifierWithContentsOfFile:(NSString*)path;
++ (BKClassifier*)classifierWithContentsOfFile:(NSString*)path;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
