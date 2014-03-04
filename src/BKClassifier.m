@@ -106,7 +106,12 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
 #pragma mark Creation Methods
 + (BKClassifier*)classifierWithContentsOfFile:(NSString*)path
 {
-    return [[BKClassifier alloc] initWithContentsOfFile:path];
+    BKClassifier *classifier = [[BKClassifier alloc] initWithContentsOfFile:path];
+    if (!classifier) {
+        classifier = [self init];
+        [classifier writeToFile:path];
+    }
+    return classifier;
 }
 
 #pragma mark -
