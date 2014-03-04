@@ -37,11 +37,7 @@
 
 #import <BayesianKit/BKTokenData.h>
 
-
 @implementation BKTokenData
-
-@synthesize count;
-@synthesize probability;
 
 - (id)initWithCount:(NSUInteger)aCount
 {
@@ -54,7 +50,7 @@
 
 + (BKTokenData*)tokenDataWithCount:(NSUInteger)aCount
 {
-    return [[[BKTokenData alloc] initWithCount:aCount] autorelease];
+    return [[BKTokenData alloc] initWithCount:aCount];
 }
 
 #pragma mark -
@@ -63,37 +59,37 @@
 {
     self = [super init];
     if (self) {
-        count = [coder decodeIntegerForKey:@"Count"];
-        probability = [coder decodeFloatForKey:@"Probability"];
+        _count = [coder decodeIntegerForKey:@"Count"];
+        _probability = [coder decodeFloatForKey:@"Probability"];
     }
     return self;
 }
 
 - (void)encodeWithCoder:(NSCoder*)coder
 {
-    [coder encodeInteger:count forKey:@"Count"];
-    [coder encodeFloat:probability forKey:@"Probability"];
+    [coder encodeInteger:self.count forKey:@"Count"];
+    [coder encodeFloat:self.probability forKey:@"Probability"];
 }
 
 #pragma mark -
 #pragma mark Custom Setters
-- (void)setProbability:(float)aProbability
+- (void)setProbability:(CGFloat)aProbability
 {
-    probability = MIN(0.9999f, aProbability);
-    probability = MAX(0.0001f, probability);
+    _probability = MIN(0.9999f, aProbability);
+    _probability = MAX(0.0001f, _probability);
 }
 
 #pragma mark -
 #pragma mark Comparison Methods
 - (NSComparisonResult)compareCount:(BKTokenData*)other
 {
-    return [[NSNumber numberWithUnsignedInteger:count] compare:
+    return [[NSNumber numberWithUnsignedInteger:self.count] compare:
             [NSNumber numberWithUnsignedInteger:[other count]]];
 }
 
 - (NSComparisonResult)compareProbability:(BKTokenData*)other
 {
-    return [[NSNumber numberWithFloat:probability] compare:
+    return [[NSNumber numberWithFloat:self.probability] compare:
             [NSNumber numberWithFloat:[other probability]]];
 }
 
@@ -101,7 +97,7 @@
 #pragma mark Printing Methods
 - (NSString*)description
 {
-    return [NSString stringWithFormat:@"{count: %llu, probability: %f}", count, probability];
+    return [NSString stringWithFormat:@"{count: %lu, probability: %f}", self.count, self.probability];
 }
 
 @end

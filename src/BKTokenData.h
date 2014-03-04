@@ -41,10 +41,7 @@
  
  You should never have to handle directly an object of this type.
  */
-@interface BKTokenData : NSObject <NSCoding> {
-    NSUInteger count;
-    float probability;
-}
+@interface BKTokenData : NSObject <NSCoding>
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -52,9 +49,9 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 
 /** Number of occurence of a token within a pool */
-@property (readwrite, assign) NSUInteger count;
+@property (nonatomic) NSUInteger count;
 /** Probability associated with a token in a pool */
-@property (readwrite, assign) float probability;
+@property (nonatomic) CGFloat probability;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////

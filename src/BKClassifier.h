@@ -69,8 +69,6 @@
     NSMutableDictionary *pools;
     BOOL dirty;
     
-    NSInvocation *probabilitiesCombinerInvocation;
-    
     id<BKTokenizing> tokenizer;
 }
 
@@ -81,19 +79,11 @@
 /** Dictionary containing every data pools of the classifier */
 @property (readonly) NSMutableDictionary *pools;
 
-/** Invocation to call for combining probabilities.
- 
- As an alternative you can use @c setProbabilitiesCombinerWithTarget:selector:userInfo:().
- 
- By default it uses @c robinsonFisherCombinerOn:userInfo:.
- */
-@property (readwrite, retain) NSInvocation *probabilitiesCombinerInvocation;
-
 /** Tokenizer to use on string training or guessing.
  
  By default it uses @c BKTokenizer
  */
-@property (readwrite, retain) id<BKTokenizing> tokenizer;
+@property (readwrite, strong) id<BKTokenizing> tokenizer;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -182,25 +172,24 @@
  @see robinsonCombinerOn:userInfo:
  @see robinsonFisherCombinerOn:userInfo:
  */
-- (void)setProbabilitiesCombinerWithTarget:(id)target selector:(SEL)selector userInfo:(id)userInfo;
+
+@property (nonatomic, copy) CGFloat (^probabilityCombinerBlock)(NSArray *probabilities);
 
 /** Compute Robinson's combiner on a series of probabilities.
  
  @param probabilities An array of @c NSNumber containing float numbers.
- @param userInfo Custom user info for the combiner. Unused in this method.
  @return A single probability representing the serie.
  @see robinsonFisherCombinerOn:userInfo:
  */
-- (float)robinsonCombinerOn:(NSArray*)probabilities userInfo:(id)userInfo;
+- (float)robinsonCombinerOn:(NSArray*)probabilities;
 
 /** Compute Robinson-Fisher's combiner on a series of probabilities.
  
  @param probabilities An array of @c NSNumber containing float numbers.
- @param userInfo Custom user info for the combiner. Unused in this method.
  @return A single probability representing the serie.
  @see robinsonCombinerOn:userInfo:
  */
-- (float)robinsonFisherCombinerOn:(NSArray*)probabilities userInfo:(id)userInfo;
+- (float)robinsonFisherCombinerOn:(NSArray*)probabilities;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////

@@ -50,41 +50,26 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
 @implementation BKClassifier
 
 @synthesize pools;
-@synthesize probabilitiesCombinerInvocation;
 @synthesize tokenizer;
 
 - (id)init
 {
     self = [super init];
     if (self) {
-        corpus = [[BKDataPool alloc] initWithName:BKCorpusDataPoolName];
-        pools = [[NSMutableDictionary alloc] init];
-        dirty = YES;
-        
-        [self setProbabilitiesCombinerWithTarget:self 
-                                        selector:@selector(robinsonFisherCombinerOn:userInfo:) 
-                                        userInfo:nil];
-        
-        tokenizer = [[BKTokenizer alloc] init];
+        [self sharedInit];
     }
     return self;
 }
 
 - (id)initWithContentsOfFile:(NSString*)path
 {
-    self = [[NSKeyedUnarchiver unarchiveObjectWithFile:path] retain];
+    self = [NSKeyedUnarchiver unarchiveObjectWithFile:path];
     if (self) {
     }
     return self;
 }
 
 
-- (void)dealloc
-{
-    [corpus release];
-    [pools release];
-    [super dealloc];
-}
 
 #pragma mark -
 #pragma mark NSCoding Methods
@@ -92,17 +77,23 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
 {
     self = [super init];
     if (self) {
-        tokenizer = [[BKTokenizer alloc] init];
-        dirty = YES;
-        
-        corpus = [[coder decodeObjectForKey:@"Corpus"] retain];
-        pools = [[coder decodeObjectForKey:@"Pools"] retain];
-        
-        [self setProbabilitiesCombinerWithTarget:self 
-                                        selector:@selector(robinsonFisherCombinerOn:userInfo:) 
-                                        userInfo:nil];
+        [self sharedInit];
+        corpus = [coder decodeObjectForKey:@"Corpus"];
+        pools = [coder decodeObjectForKey:@"Pools"];
     }
     return self;
+}
+
+- (void) sharedInit {
+    corpus = [[BKDataPool alloc] initWithName:BKCorpusDataPoolName];
+    pools = [[NSMutableDictionary alloc] init];
+    dirty = YES;
+    __weak BKClassifier* weakself = self;
+    _probabilityCombinerBlock = ^CGFloat(NSArray *probabilities) {
+        return [weakself robinsonCombinerOn:probabilities];
+    };
+    
+    tokenizer = [[BKTokenizer alloc] init];
 }
 
 - (void)encodeWithCoder:(NSCoder*)coder
@@ -115,7 +106,7 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
 #pragma mark Creation Methods
 + (BKClassifier*)classifierWithContentsOfFile:(NSString*)path
 {
-    return [[[BKClassifier alloc] initWithContentsOfFile:path] autorelease];
+    return [[BKClassifier alloc] initWithContentsOfFile:path];
 }
 
 #pragma mark -
@@ -133,7 +124,7 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
     pool = [pools objectForKey:poolName];
     
     if (pool == nil) {
-        pool = [[[BKDataPool alloc] initWithName:poolName] autorelease];
+        pool = [[BKDataPool alloc] initWithName:poolName];
         [pools setObject:pool forKey:poolName];
         dirty = YES;
     }
@@ -185,40 +176,28 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
 
 #pragma mark -
 #pragma mark Combiners
-- (void)setProbabilitiesCombinerWithTarget:(id)target selector:(SEL)selector userInfo:(id)userInfo
-{
-    SEL signatureSelector = @selector(robinsonCombinerOn:userInfo:);
-    NSMethodSignature *signature = [BKClassifier instanceMethodSignatureForSelector:signatureSelector];
-    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
 
-    [invocation setTarget:target];
-    [invocation setSelector:selector];
-    [invocation setArgument:&userInfo atIndex:3];
-    [invocation retainArguments];
-
-    [self setProbabilitiesCombinerInvocation:invocation];
+- (CGFloat) reduceProbabilities:(NSArray *)probabilities {
+    CGFloat reduced = 1.0f;
+    for (NSNumber *prob in probabilities) {
+        reduced *= [prob floatValue];
+    }
+    return reduced;
 }
 
-- (float)robinsonCombinerOn:(NSArray*)probabilities userInfo:(id) __unused userInfo
+- (float)robinsonCombinerOn:(NSArray*)probabilities
 {
     NSUInteger length = [probabilities count];
+    NSMutableArray *inverseProbs = [NSMutableArray arrayWithCapacity:length];
     float nth = 1.0f / (uint32_t)length;
-    float probs[length], inverseProbs[length];
     
-    NSUInteger idx = 0;
     for (NSNumber *probability in probabilities) {
-        probs[idx] = [probability floatValue];
-        inverseProbs[idx] = 1.0f - [probability floatValue];
-        idx++;
+        [inverseProbs addObject:@(1.0f - [probability floatValue])];
     }
     
-    float inverseProbsReduced = inverseProbs[0];
-    float probsReduced = probs[0];
-    for (NSUInteger i = 1; i < length; i++) {
-        inverseProbsReduced = inverseProbsReduced * inverseProbs[i];
-        probsReduced = probsReduced * probs[i];
-    }
-    
+    CGFloat probsReduced = [self reduceProbabilities:probabilities];
+    CGFloat inverseProbsReduced = [self reduceProbabilities:inverseProbs];
+
     float P = 1.0f - powf(inverseProbsReduced, nth);
     float Q = 1.0f - powf(probsReduced, nth);
     
@@ -226,30 +205,21 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
     return (1.0f + S) / 2.0f;
 }
 
-- (float)robinsonFisherCombinerOn:(NSArray*)probabilities userInfo:(id) __unused userInfo
+- (float)robinsonFisherCombinerOn:(NSArray*)probabilities
 {
     NSUInteger length = [probabilities count];
-    float probs[length], inverseProbs[length];
-    
-    if (length > (NSUIntegerMax / 2)) { 
-        @throw [NSException exceptionWithName:@"NSUInteger overflow" 
-                                       reason:@"Too much probabilities to be combined" 
+    if (length > (NSUIntegerMax / 2)) {
+        @throw [NSException exceptionWithName:@"NSUInteger overflow"
+                                       reason:@"Too much probabilities to be combined"
                                      userInfo:nil];
     }
-    
-    NSUInteger idx = 0;
+    NSMutableArray *inverseProbs = [NSMutableArray arrayWithCapacity:length];
     for (NSNumber *probability in probabilities) {
-        probs[idx] = [probability floatValue];
-        inverseProbs[idx] = (1.0f - [probability floatValue]);
-        idx++;
+        [inverseProbs addObject:@(1.0f - [probability floatValue])];
     }
     
-    float inverseProbsReduced = inverseProbs[0];
-    float probsReduced = probs[0];
-    for (NSUInteger i = 1; i < length; i++) {
-        inverseProbsReduced = inverseProbsReduced * inverseProbs[i];
-        probsReduced = probsReduced * probs[i];
-    }
+    CGFloat probsReduced = [self reduceProbabilities:probabilities];
+    CGFloat inverseProbsReduced = [self reduceProbabilities:inverseProbs];
     
     float H = [BKClassifier chiSquare:(-2.0f * logf(probsReduced)) withDegreeOfFreedom:(2 * length)];
     float S = [BKClassifier chiSquare:(-2.0f * logf(inverseProbsReduced)) withDegreeOfFreedom:(2 * length)];
@@ -320,11 +290,8 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
         NSArray *tokensProbabilities = [pool probabilitiesForTokens:tokens];
         
         if ([tokensProbabilities count] > 0) {
-            float probabilityCombined;
-            [probabilitiesCombinerInvocation setArgument:&tokensProbabilities atIndex:2];
-            [probabilitiesCombinerInvocation invoke];
-            [probabilitiesCombinerInvocation getReturnValue:&probabilityCombined];
-            [result setObject:[NSNumber numberWithFloat:probabilityCombined]
+            float probabilityCombined = self.probabilityCombinerBlock(tokensProbabilities);
+            [result setObject:@(probabilityCombined)
                        forKey:poolName];
         }
     }

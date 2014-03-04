@@ -48,18 +48,12 @@
 {
     self = [super init];
     if (self) {
-        name = [aName retain];
+        name = aName;
         _tokensData = [[NSMutableDictionary alloc] init];
     }
     return self;
 }
 
-- (void)dealloc
-{
-    [name release];
-    [_tokensData release];
-    [super dealloc];
-}
 
 #pragma mark -
 #pragma mark NSCoding Methods
@@ -67,9 +61,9 @@
 {
     self = [super init];
     if (self) {
-        name = [[coder decodeObjectForKey:@"Name"] retain];
+        name = [coder decodeObjectForKey:@"Name"];
         _tokensTotalCount = [coder decodeIntegerForKey:@"TotalCount"];
-        _tokensData = [[coder decodeObjectForKey:@"TokensData"] retain];
+        _tokensData = [coder decodeObjectForKey:@"TokensData"];
     }
     return self;
 }
@@ -185,19 +179,21 @@
 - (void)printInformations
 {
     NSLog(@"%@ Informations:", name);
-    NSLog(@"         Number of tokens: %llu", [_tokensData count]);
-    NSLog(@"    Total count of tokens: %llu", _tokensTotalCount);
+    NSLog(@"         Number of tokens: %li", [_tokensData count]);
+    NSLog(@"    Total count of tokens: %li", _tokensTotalCount);
     
     NSArray *keys = [_tokensData keysSortedByValueUsingSelector:@selector(compareCount:)];
     NSString *token = [keys lastObject];
-    NSLog(@"       Most counted token: %@ counted %llu times", token, [self countForToken:token]);
+    NSLog(@"       Most counted token: %@ counted %li times", token, [self countForToken:token]);
 }
+
+
 
 #pragma mark -
 #pragma mark NSFastEnumeration Methods
-- (NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state objects:(id *)stackbuf count:(NSUInteger)len
-{
-    return [_tokensData countByEnumeratingWithState:state objects:stackbuf count:len];
+
+- (NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state objects:(__unsafe_unretained id [])buffer count:(NSUInteger)len {
+    return [_tokensData countByEnumeratingWithState:state objects:buffer count:len];
 }
 
 @end
