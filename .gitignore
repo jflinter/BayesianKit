@@ -7,3 +7,6 @@ build/*
 
 docs/
 !docs/man/man1/bayes.1
+
+/BayesianKit.xcodeproj/xcuserdata/
+/BayesianKit.xcodeproj/project.xcworkspace/
