@@ -30,7 +30,7 @@
  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
  TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
+ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
@@ -89,7 +89,7 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
     pools = [[NSMutableDictionary alloc] init];
     dirty = YES;
     __weak BKClassifier* weakself = self;
-    _probabilityCombinerBlock = ^CGFloat(NSArray *probabilities) {
+    self.probabilityCombinerBlock = ^CGFloat(NSArray *probabilities) {
         return [weakself robinsonCombinerOn:probabilities];
     };
     
@@ -202,7 +202,7 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
     
     CGFloat probsReduced = [self reduceProbabilities:probabilities];
     CGFloat inverseProbsReduced = [self reduceProbabilities:inverseProbs];
-
+    
     float P = 1.0f - powf(inverseProbsReduced, nth);
     float Q = 1.0f - powf(probsReduced, nth);
     
@@ -237,8 +237,8 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
 - (void)trainWithFile:(NSString*)path forPoolNamed:(NSString*)poolName
 {
     NSError *error = nil;
-    NSString *content = [NSString stringWithContentsOfFile:path 
-                                                  encoding:NSUTF8StringEncoding 
+    NSString *content = [NSString stringWithContentsOfFile:path
+                                                  encoding:NSUTF8StringEncoding
                                                      error:&error];
     if (error) {
         NSLog(@"Error - %@", [error localizedDescription]);
@@ -269,8 +269,8 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
 - (NSDictionary*)guessWithFile:(NSString*)path
 {
     NSError *error = nil;
-    NSString *content = [NSString stringWithContentsOfFile:path 
-                                                  encoding:NSUTF8StringEncoding 
+    NSString *content = [NSString stringWithContentsOfFile:path
+                                                  encoding:NSUTF8StringEncoding
                                                      error:&error];
     if (error) {
         NSLog(@"Error - %@", [error localizedDescription]);
@@ -288,7 +288,7 @@ NSString* const BKCorpusDataPoolName = @"__BKCorpus__";
 - (NSDictionary*)guessWithTokens:(NSArray*)tokens
 {
     [self updatePoolsProbabilities];
-    NSMutableDictionary *result = [NSMutableDictionary dictionaryWithCapacity:[pools count]];
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
     
     for (NSString *poolName in pools) {
         BKDataPool *pool = [pools objectForKey:poolName];

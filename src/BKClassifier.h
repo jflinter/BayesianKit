@@ -173,7 +173,7 @@
  @see robinsonFisherCombinerOn:userInfo:
  */
 
-@property (nonatomic, copy) CGFloat (^probabilityCombinerBlock)(NSArray *probabilities);
+@property (nonatomic, strong) CGFloat (^probabilityCombinerBlock)(NSArray *probabilities);
 
 /** Compute Robinson's combiner on a series of probabilities.
  
